@@ -13,7 +13,7 @@ pipeline {
                         set -e
                         commit_hash=\$(git rev-parse --short HEAD)
                         tag_name="dev.\${commit_hash}"
-                        version=\$(jq -r '.version' package.json)
+                        version=$(cat package.json | grep version | head -1 | awk -F: '{print $2}' | sed 's/[",]//g')
                         release-it --increment=\${INCREMENT_TYPE} --release-version=\$version
                         release-it --no-npm --ci --git.tagName=\${version}.\$tag_name
                     """
