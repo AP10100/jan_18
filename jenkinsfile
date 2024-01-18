@@ -9,8 +9,7 @@ pipeline {
         stage('Release Preparation') {
             steps {
                 script {
-                    // Install jq
-                    sh "sudo apt install -y jq"
+                   
 
                     // Set up variables
                     def commit_hash = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
