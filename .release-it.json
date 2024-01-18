@@ -1,0 +1,10 @@
+{
+    "git": {
+        "tagName": "v${version}",
+        "requireCleanWorkingDir": false,
+        "requireUpstream": false,
+        "commitMessage": "Release v${version}"
+      }
+  }
+  
+  
