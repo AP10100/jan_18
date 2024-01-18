@@ -9,17 +9,22 @@ pipeline {
         stage('Release Preparation') {
             steps {
                 script {
+                    // Install jq
+                    sh "apt-get update && apt-get install -y jq"
+
+                    // Set up variables
+                    def commit_hash = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                    def tag_name = "dev.${commit_hash}"
+                    def version = sh(script: 'jq -r .version package.json', returnStdout: true).trim()
+
+                    // Release preparation steps
                     sh """
                         set -e
-                        commit_hash=\$(git rev-parse --short HEAD)
-                        tag_name="dev.\${commit_hash}"
-                        version=$(cat package.json | grep version | head -1 | awk -F: '{print $2}' | sed 's/[",]//g')
-                        release-it --increment=\${INCREMENT_TYPE} --release-version=\$version
-                        release-it --no-npm --ci --git.tagName=\${version}.\$tag_name
+                        release-it --increment=${INCREMENT_TYPE} --release-version=${version}
+                        release-it --no-npm --ci --git.tagName=${version}.${tag_name}
                     """
                 }
             }
         }
-
     }
 }
