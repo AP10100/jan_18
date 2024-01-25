@@ -1,6 +1,6 @@
 {
     "git": {
-        "tagName": "v${version}",
+        "tagName": "${version}",
         "requireCleanWorkingDir": false,
         "requireUpstream": false,
         "commitMessage": "Release v${version}"
