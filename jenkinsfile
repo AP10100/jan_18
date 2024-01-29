@@ -1,29 +1,135 @@
 pipeline {
-    agent any
-
-    parameters {
-        string(name: 'INCREMENT_TYPE', defaultValue: 'patch', description: 'Increment type (patch, minor, major)')
-    }
-
-    stages {
-        stage('Release Preparation') {
-            steps {
-                script {
-                   
-
-                    // Set up variables
-                    def commit_hash = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-                    def tag_name = "dev.${commit_hash}"
-                    def version = sh(script: 'jq -r .version package.json', returnStdout: true).trim()
-
-                    // Release preparation steps
-                    sh """
-                        set -e
-                        release-it --increment=${INCREMENT_TYPE} --release-version=${version}
-                        release-it --no-npm --ci --git.tagName=${version}.${tag_name}
-                    """
-                }
-            }
-        }
-    }
+	agent any
+	parameters {
+	    choice(name: 'ENVIRONMENT', choices: ['dev', 'qa', 'beta', 'prod'], description: 'Select the environment')
+		choice(name: 'VERSION_INCREMENT', choices: ['No Change', 'patch', 'minor', 'major'], description: 'Select the version increment type')
+	}
+	environment {
+		token = credentials('BitBucket_Jenkins_Token')
+		bitbucket_username = credentials('BitBucket_Username')
+		components = "${params.COMPONENTS}"
+		environment = "${params.ENVIRONMENT}"
+		bitbucket_tag = "${params.Bitbucket_Branch}"
+	}
+	stages {
+		stage('Cleaning Working Directory') {
+			steps {
+				deleteDir()
+			}
+		}
+		stage('Parameter Selection') {
+			steps {
+				script {
+					echo "${components}"
+					echo "${environment}"
+					echo "${bitbucket_tag}"
+				}
+			}
+		}
+		stage('Git Clone') {
+			steps {
+				script {
+					if ("${params.COMPONENTS}" == "all") {
+						def componentsList = ['test_appointments']
+						componentsList.each { component ->
+							echo "Cloning repository for component: ${component.trim()}"
+							sh "git clone --single-branch --branch ${bitbucket_tag} 'https://${bitbucket_username}:${token}@bitbucket.org/lumate-health/${component.trim()}.git'"
+						}
+					}
+					else {
+						def componentsList = params.COMPONENTS.split(',')
+						componentsList.each { component ->
+						echo "Cloning repository for component: ${component.trim()}"
+						sh "git clone --single-branch --branch ${bitbucket_tag} 'https://${bitbucket_username}:${token}@bitbucket.org/lumate-health/${component.trim()}.git'"
+						}
+					}
+				}
+			}
+		}
+		stage('Release Tag') {
+			steps {
+				script {
+					def componentsList
+					if ("${params.COMPONENTS}" == "all") {
+						componentsList = ['test_appointments']
+					} else {
+						componentsList = params.COMPONENTS.split(',')
+					}
+					componentsList.each { component ->
+						dir("${WORKSPACE}/${component.trim()}") {
+							def next_version = sh(script: "release-it --ci --increment ${params.VERSION_INCREMENT} --dry-run | grep 'npm version' | awk '{print \$4}'", returnStdout: true).trim()
+							echo "Next Version: ${next_version}"
+							def current_version = sh(script: "release-it --ci --no-increment --dry-run | grep 'annotate' | awk {'print \$7'}", returnStdout: true).trim()
+							echo "Current Version: ${current_version}"
+							if ("${params.ENVIRONMENT}" == "dev") {
+							echo "Release for dev environment"
+							def commit_hash = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+							echo "${commit_hash}"
+							def dev_tag = "dev.${commit_hash}"
+							echo "${dev_tag}"
+								if ("${params.VERSION_INCREMENT}" == "No Change") {
+									echo "No Change let's release existing version"
+									sh "release-it --no-npm --ci --git.tagName=$current_version.$dev_tag"
+									def tag_name = "$current_version.$dev_tag"
+									echo "Tag created: $tag_name"
+								}
+								else {
+									echo "let's release ${params.VERSION_INCREMENT} version"
+									sh "release-it --no-npm --ci --git.tagName=$next_version.$dev_tag"
+									def tag_name = "$next_version.$dev_tag"
+									echo "Tag created: $tag_name"
+								}
+							}
+							else if ("${params.ENVIRONMENT}" == "qa") {
+							echo "Release for qa environment"
+								if ("${params.VERSION_INCREMENT}" == "No Change") {
+									echo "No Change let's release existing version"
+									def current_rc_tag = sh(script: 'git describe --tags --match "*rc*" --abbrev=0', returnStdout: true).trim()
+									echo "Current RC Tag: ${current_rc_tag}"
+									def tag_name = "$current_rc_tag"
+									echo "Tag created: $tag_name"
+								}
+								else {
+									echo "let's release ${params.VERSION_INCREMENT} version"
+									sh "release-it ${params.VERSION_INCREMENT} --preRelease=rc --ci"
+									def tag_name = sh(script: 'git describe --tags --match "*rc*" --abbrev=0', returnStdout: true).trim()
+									echo "Tag created: $tag_name"
+								}
+							}
+							else if ("${params.ENVIRONMENT}" == "beta") {
+							echo "Release for Pre-Prod environment"
+								if ("${params.VERSION_INCREMENT}" == "No Change") {
+									echo "No Change let's release existing version"
+									def current_beta_tag = sh(script: 'git describe --tags --match "*beta*" --abbrev=0', returnStdout: true).trim()
+									echo "Current RC Tag: ${current_beta_tag}"
+									def tag_name = "$current_beta_tag"
+									echo "Tag created: $tag_name"
+								}
+								else {
+									echo "let's release ${params.VERSION_INCREMENT} version"
+									sh "release-it ${params.VERSION_INCREMENT} --preRelease=beta --ci"
+									def tag_name = sh(script: 'git describe --tags --match "*beta*" --abbrev=0', returnStdout: true).trim()
+									echo "Tag created: $tag_name"
+								}
+							}
+							else if ("${params.ENVIRONMENT}" == "prod") {
+							echo "Release for Production environment"
+								if ("${params.VERSION_INCREMENT}" == "No Change") {
+									echo "Current Version: ${current_version}"
+									def tag_name = "$current_version"
+									echo "Tag created: $tag_name"
+								}
+								else {
+									echo "let's release ${params.VERSION_INCREMENT} version"
+									sh "release-it --ci --git.tagName=$next_version"
+									def tag_name = "$next_version"
+									echo "Tag created: $tag_name"
+								}							
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 }
