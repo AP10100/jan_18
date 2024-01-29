@@ -4,7 +4,11 @@
         "requireCleanWorkingDir": false,
         "requireUpstream": false,
         "commitMessage": "Release v${version}"
-      }
+      },
+        "npm": {
+          "publish": false
+        }
+      
   }
   
   
