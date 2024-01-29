@@ -90,10 +90,16 @@ pipeline {
 									echo "Tag created: $tag_name"
 								}
 								else {
-									echo "let's release ${params.VERSION_INCREMENT} version"
-									sh "release-it ${params.VERSION_INCREMENT} --preRelease=rc --ci"
-									def tag_name = sh(script: 'git describe --tags --match "*rc*" --abbrev=0', returnStdout: true).trim()
-									echo "Tag created: $tag_name"
+                                    if (next_version ==~ /^${next_version}-rc\\d+$/){
+                                        echo "Version matches pattern, running specific command"
+                                        sh "release-it --preRelease=rc --ci"
+                                    }
+                                    else {
+                                        echo "let's release ${params.VERSION_INCREMENT} version"
+                                        sh "release-it ${params.VERSION_INCREMENT} --preRelease=rc --ci"
+                                        }
+                                        def tag_name = sh(script: 'git describe --tags --match "*rc*" --abbrev=0', returnStdout: true).trim()
+                                        echo "Tag created: $tag_name"
 								}
 							}
 							else if ("${params.ENVIRONMENT}" == "beta") {
