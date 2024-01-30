@@ -94,7 +94,7 @@ jenkins_url = 'http://localhost:8080'
 username = 'admin'
 password = '1164015dd83f8156a433965f169b8d51f5'
 
-with open('/home/aman/jan_4/fetchBuild_script_output.txt', 'w') as output_file:
+with open('fetchBuild_script_output.txt', 'w') as output_file:
     get_all_multibranch_jobs(username, password, jenkins_url, output_file)
 
 
@@ -102,7 +102,7 @@ with open('/home/aman/jan_4/fetchBuild_script_output.txt', 'w') as output_file:
 import csv
 
 # Open input file
-with open('/home/aman/jan_4/fetchBuild_script_output.txt', 'r') as file:
+with open('fetchBuild_script_output.txt', 'r') as file:
     lines = file.readlines()
 
 # Initialize CSV data
