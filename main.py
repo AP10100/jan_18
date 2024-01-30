@@ -62,7 +62,7 @@ def get_build_info(username, password, job_name, branch_name, jenkins_url, file)
     }
 
     url = f'{jenkins_url}/job/{job_name}/job/{branch_name}/api/json?tree=builds[number,timestamp,result]'
-
+    print(url)
     response = requests.get(url, headers=headers)
 
     if response.status_code == 200:
