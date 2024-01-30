@@ -12,7 +12,9 @@ pipeline {
         stage('Run Python Script') {
             steps {
                 // Run the Python script
+                echo "running .py file"
                 sh 'python3 main.py'
+                sh 'completed'
             }
         }
     }
