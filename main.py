@@ -135,4 +135,4 @@ for line in lines:
 with open('output.csv', 'w', newline='') as csvfile:
     csvwriter = csv.writer(csvfile)
     csvwriter.writerows(csv_data)
-    print("created csv file successfully")
+    print("csv file created successfully")
