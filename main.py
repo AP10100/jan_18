@@ -62,7 +62,7 @@ def get_build_info(username, password, job_name, branch_name, jenkins_url, file)
     }
 
     url = f'{jenkins_url}/job/{job_name}/job/{branch_name}/api/json?tree=builds[number,timestamp,result]'
-    print(url)
+    
     response = requests.get(url, headers=headers)
 
     if response.status_code == 200:
@@ -96,8 +96,7 @@ password = '1164015dd83f8156a433965f169b8d51f5'
 
 with open('fetchBuild_script_output.txt', 'w') as output_file:
     get_all_multibranch_jobs(username, password, jenkins_url, output_file)
-
-
+    print("build data file created successfully")
 
 import csv
 
@@ -136,3 +135,4 @@ for line in lines:
 with open('output.csv', 'w', newline='') as csvfile:
     csvwriter = csv.writer(csvfile)
     csvwriter.writerows(csv_data)
+    print("created csv file successfully")
